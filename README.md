@@ -1,2 +1,1 @@
-** Duitenberg Investment Bot
-* (Under development)
+Duitenberg Investment Bot Under development)
