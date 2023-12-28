@@ -3,9 +3,7 @@
 <!-- PROJECT LOGO -->
 <br />
 <div align="center">
-  <a href="https://github.com/Duitenberg-ICT/Duitenberg_website/">
-    <img src="blob/main/images/navigation/Logo-Arrow_Only.png" alt="Logo" width="80" height="80">
-  </a>
+  <img src="https://github.com/Duitenberg-ICT/Duitenberg_website/blob/main/images/navigation/Logo-Arrow_Only.png" alt="Logo" width="80" height="80">
 
 <h3 align="center">project_title</h3>
 
