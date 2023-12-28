@@ -8,7 +8,7 @@
 <h3 align="center">Duitenberg Investment AI</h3>
 
   <p align="center">
-    An investment AI tool, using Machine learning methods, and established investment strategies for internal research.
+    An investment AI tool powered by the lumibot library. The project uses Machine learning methods, and established investment strategies for internal research.
     <br />
     <a href="https://github.com/github_username/repo_name"><strong>Explore the docs »</strong></a>
     <br />
