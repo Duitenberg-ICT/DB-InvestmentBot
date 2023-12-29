@@ -5,9 +5,9 @@ from lumibot.strategies import Strategy
 
 class NaiveStrategy(Strategy):
 
-    def initialize(self):
-        self.sleeptime = "10M"
-        self.minutes_before_closing = 15
+    def initialize(self, sleeptime="10M", minutes_before_closing=15):
+        self.sleeptime = sleeptime
+        self.minutes_before_closing = minutes_before_closing
 
     def on_trading_iteration(self):
         if self.first_iteration:
@@ -16,14 +16,16 @@ class NaiveStrategy(Strategy):
             order = self.create_order("AAPL", quantity, "buy")
             self.submit_order(order)
 
+    def after_market_closes(self):
+        self.log_message("MARKET CLOSED")
+        self.log_message(f"TOTAL PORTFOLIO VALUE: {self.portfolio_value}")
+        self.log_message(f"AMOUNT OF CASH: {self.cash}")
 
-def run_backtest(start=datetime(2020, 11, 1, 0, 0, 0), 
-                 end=datetime(2020, 12, 31, 0, 0, 0), 
-                 budget=100000):
-    NaiveStrategy.backtest(
-        "strat_1",
-        budget,
-        YahooDataBacktesting,
-        start,
-        end,
-    )
+
+backtesting_start = datetime(2020, 1, 1)
+backtesting_end = datetime(2020, 12, 31)
+NaiveStrategy.backtest(
+    YahooDataBacktesting,
+    backtesting_start,
+    backtesting_end,
+)
