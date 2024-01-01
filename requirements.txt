@@ -1,1 +1,2 @@
 lumibot==2.9.13
+asciimatics==1.15.0
