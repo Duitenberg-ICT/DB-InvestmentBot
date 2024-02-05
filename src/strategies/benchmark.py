@@ -19,9 +19,6 @@ class Benchmark(Strategy):
         symbols = df['Symbol'].tolist()
         # Some symbols use a different format in Yahoo Finance
         symbols = [symbol.replace('.', '-') for symbol in symbols]
-        for symbol in symbols:
-            print(symbol)
-            print(self.get_last_price(symbol))
         return symbols
 
     def on_trading_iteration(self):
@@ -32,11 +29,10 @@ class Benchmark(Strategy):
                     self.submit_order(order)
 
 
-backtesting_start = datetime.datetime(2020, 1, 1)
-backtesting_end = datetime.datetime(2023, 12, 31)
+backtesting_start = datetime.datetime(2023, 2, 1)
+backtesting_end = datetime.datetime(2024, 2, 1)
 Benchmark.backtest(
     YahooDataBacktesting,
     backtesting_start,
-    backtesting_end,
-    budget=100000
+    backtesting_end
 )
