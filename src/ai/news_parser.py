@@ -1,9 +1,11 @@
+from datetime import datetime, timedelta, timezone
 import feedparser
-import processer as p
 
-f = feedparser.parse("https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=15839069")
-example = f["entries"][0]["title"]
+url = "https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=100003114"
+feed = feedparser.parse(url)
 
-print(f)
-print(example)
-print(p.fetch_companies(example))
+for entry in feed.entries:
+    print("Entry Title:", entry.title)
+    print("Entry Link:", entry.link)
+    print("Entry Published Date:", entry.published)
+    print("\n")
