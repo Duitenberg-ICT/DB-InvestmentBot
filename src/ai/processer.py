@@ -81,8 +81,8 @@ def fetch_companies(text, custom_nlp=None) -> List[str]:
         if entity.label_ == "ORG":
             companies.append(entity.text)
 
-    if len(companies) == 0:
-        raise ValueError("No companies found in the text.")
+    # if len(companies) == 0:
+    #     raise ValueError("No companies found in the text.")
 
     return companies
 
