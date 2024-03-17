@@ -8,7 +8,7 @@ import pandas as pd
 class MeanReversion_tech(Strategy):
     def initialize(self):
         self.sleeptime = "1D"
-        self.big_tech = ['AAPL', 'GOOG', 'AMZN', 'NVDA', 'META', 'TSLA', 'MSFT', 'ORCL', 'AMD', 'INTC']
+        self.big_tech = ['AAPL', 'GOOG', 'AMZN', 'NVDA', 'META', 'TSLA', 'MSFT']
         # self.big_finance = ['BRK-B', 'JPM', 'V', 'MA', 'BAC', 'GS', 'WFC', 'C', 'AXP', 'PYPL']
         # self.big_natural_resources = ['XOM', 'CVX', 'COP', 'LIN', 'EOG', 'NEE', 'GE', 'DUK', 'SLB', 'SO']
         # self.big_health = ['LLY', 'JNJ', 'ABBV', 'PFE', 'AMGN', 'MRK', 'BMY', 'GILD', 'UNH', 'ABT']

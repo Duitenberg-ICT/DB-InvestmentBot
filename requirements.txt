@@ -10,3 +10,4 @@ statsmodels~=0.14.1
 pandas~=2.0.3
 prophet
 matplotlib
+sklearn
