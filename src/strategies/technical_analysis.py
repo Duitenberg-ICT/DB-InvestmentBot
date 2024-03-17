@@ -17,6 +17,7 @@ def get_snp_tickers():
 class TAnalysis(Strategy):
     def initialize(self, **kwargs):
         self.sleeptime = "1D"
+        self.max_portfolio_size = 10
         self.portfolio = []
         self.snp500 = get_snp_tickers()
         self.buys = []
@@ -24,12 +25,13 @@ class TAnalysis(Strategy):
         self.strong_sells = [] # sell all
         self.ratings = {}
         self.indicators = []
-        self.max_holdings = 7 # maximum ten different tickers in portfolio
-        self.mag_7 = ['AAPL', 'GOOG', 'AMZN', 'NVDA', 'META', 'TSLA', 'MSFT']
-        # self.big_finance = ['BRK-B', 'JPM', 'V', 'MA', 'BAC', 'GS', 'WFC', 'C', 'AXP', 'PYPL']
-        # self.big_natural_resources = ['XOM', 'CVX', 'COP', 'LIN', 'EOG', 'NEE', 'GE', 'DUK', 'SLB', 'SO']
-        # self.big_health = ['LLY', 'JNJ', 'ABBV', 'PFE', 'AMGN', 'MRK', 'BMY', 'GILD', 'UNH', 'ABT']
+        self.big_tech = ['AAPL', 'GOOG', 'AMZN', 'NVDA', 'META', 'ASML', 'MSFT', 'ORCL', 'AMD', 'TSM']
+        self.big_finance = ['BRK-B', 'JPM', 'V', 'MA', 'BAC', 'GS', 'WFC', 'C', 'AXP', 'PYPL']
+        self.big_natural_resources = ['XOM', 'CVX', 'COP', 'LIN', 'EOG', 'NEE', 'GE', 'DUK', 'SLB', 'SO']
+        self.big_health = ['LLY', 'JNJ', 'ABBV', 'PFE', 'AMGN', 'MRK', 'BMY', 'GILD', 'UNH', 'ABT']
         self.big_consumer = ['AVGO', 'HD', 'MCD', 'BKNG', 'NKE', 'KO', 'PG', 'WMT', 'COST', 'PEP']
+        self.all_sectors = self.big_tech + self.big_finance + self.big_natural_resources + self.big_health + self.big_consumer
+
 
     def daily_analysis(self):
         self.ratings.clear()
@@ -48,7 +50,7 @@ class TAnalysis(Strategy):
         # scoring process (MA:25%, BB:25%, RSI:25%, MACD:25%)
         # todo also integrate ARIMA to scoring process in the future
         # todo Step 1: calculate technical indicators
-        for ticker in self.mag_7:
+        for ticker in self.all_sectors:
             bars = self.get_historical_prices(ticker, 30, "day")
             prices = bars.df['close'].values
             indicators = self.calculate_indicators(ticker, prices)
@@ -70,7 +72,7 @@ class TAnalysis(Strategy):
         sorted_ratings = sorted(self.ratings.items(), key=lambda item: item[1], reverse=True)[:3]
 
         for ticker in sorted_ratings:
-            if ticker[1] >= 60:
+            if ticker[1] >= 70:
                 print('Buying ticker: ' + ticker[0])
                 self.buys.append(ticker[0])
 
@@ -80,7 +82,7 @@ class TAnalysis(Strategy):
         print(self.get_positions())
         for ticker in self.portfolio:
             if ticker != 'USD':
-                if 30 <= self.ratings[ticker] <= 40:
+                if 25 <= self.ratings[ticker] <= 45:
                     print('Selling partially ticker: ' + ticker)
                     self.sells.append(ticker)
                 if self.ratings[ticker] <= 20:
@@ -214,7 +216,7 @@ class TAnalysis(Strategy):
 
     def on_trading_iteration(self):
         cash_available = self.cash
-        per_stock_allocation = cash_available / self.max_holdings
+        per_stock_allocation = cash_available / self.max_portfolio_size if len(self.buys) > 0 else 0
 
         for ticker in list(set(self.buys)):
             quantity = per_stock_allocation // self.get_last_price(ticker)
@@ -255,8 +257,8 @@ class TAnalysis(Strategy):
         self.log_returns()
 
 
-backtesting_start = datetime(2021, 3, 1)
-backtesting_end = datetime(2024, 3, 1)
+backtesting_start = datetime(2023, 3, 1)
+backtesting_end = datetime.today()
 TAnalysis.backtest(
     YahooDataBacktesting,
     backtesting_start,
