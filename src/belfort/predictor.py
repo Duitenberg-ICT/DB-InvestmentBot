@@ -14,11 +14,13 @@ class Predictor:
     def plot(self):
         figure(num=None, figsize=(8, 6), dpi=80, facecolor="w", edgecolor="k")
         self.data["Close"].plot()
+        plt.grid()
         plt.show()
 
     def lag_plot(self):
         figure(num=None, figsize=(8, 6), dpi=80, facecolor="w", edgecolor="k")
         lag_plot(self.data["Close"], lag=5)
+        plt.grid()
         plt.show()
 
     def overview(self):
