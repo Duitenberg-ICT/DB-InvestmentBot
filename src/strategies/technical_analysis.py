@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from lumibot.backtesting import YahooDataBacktesting
 from lumibot.strategies import Strategy
-import requests
+from src.belfort.predictor import Predictor
 import pandas as pd
 import yfinance as yf
 
@@ -30,8 +30,21 @@ class TAnalysis(Strategy):
         self.big_natural_resources = ['XOM', 'CVX', 'COP', 'LIN', 'EOG', 'NEE', 'GE', 'DUK', 'SLB', 'SO']
         self.big_health = ['LLY', 'JNJ', 'ABBV', 'PFE', 'AMGN', 'MRK', 'BMY', 'GILD', 'UNH', 'ABT']
         self.big_consumer = ['AVGO', 'HD', 'MCD', 'BKNG', 'NKE', 'KO', 'PG', 'WMT', 'COST', 'PEP']
-        self.all_sectors = self.big_tech + self.big_finance + self.big_natural_resources + self.big_health + self.big_consumer
+        self.selection = self.create_selection(tech=True, finance=True, natural_resources=True, health=True, consumer=True)
 
+    def create_selection(self, tech=False, finance=False, natural_resources=False, health=False, consumer=False):
+        selection = list()
+        if tech:
+            selection += self.big_tech
+        if finance:
+            selection += self.big_finance
+        if natural_resources:
+            selection += self.big_natural_resources
+        if health:
+            selection += self.big_health
+        if consumer:
+            selection += self.big_consumer
+        return selection
 
     def daily_analysis(self):
         self.ratings.clear()
@@ -46,29 +59,39 @@ class TAnalysis(Strategy):
             # Show the asset of each position
             print(position.asset)
             self.portfolio.append(str(position.asset))
+
         # -----------------------------------------------------
         # scoring process (MA:25%, BB:25%, RSI:25%, MACD:25%)
-        # todo also integrate ARIMA to scoring process in the future
-        # todo Step 1: calculate technical indicators
-        for ticker in self.all_sectors:
+
+        # Step 1: calculate technical indicators
+        for ticker in self.selection:
             bars = self.get_historical_prices(ticker, 30, "day")
             prices = bars.df['close'].values
-            indicators = self.calculate_indicators(ticker, prices)
+            try:
+                indicators = self.calculate_indicators(ticker, prices)
+            except:
+                continue
+            predictor = Predictor(ticker, period="3y")
+            arima_prediction = predictor.predict()['PP']
+            one_eighty_day_prediction = predictor.long_predict(days=180)['trend'][179]
 
-        # todo Step 2: compute scores for each indicator (FOR THE FUTURE: FINE TUNE EVALUATION ALGORITHM)
+        # Step 2: compute scores for each indicator
+        # todo FUNDAMENTAL ANALYSIS + FINE TUNE EVALUATION ALGORITHM
             score_ma = self.score_ma(indicators['ma5'], indicators['ma10'], indicators['ma20'], indicators['ma30'], prices[-1])
             score_bb = self.score_bb(prices[-1], indicators['LBB'], indicators['MBB'], indicators['UBB'])
             score_rsi = self.score_rsi(indicators['RSI'])
             score_macd = self.score_macd(indicators['MACD'], indicators['MACD_signal'])
+            score_arima = self.score_arima(prices[-1], arima_prediction, one_eighty_day_prediction)
 
-        # todo Step 3: compute overall rating
-            rating = int(0.3 * score_ma + 0.2 * score_bb + 0.2 * score_rsi + 0.3 * score_macd)
+        # Step 3: compute overall rating
+            rating = int(0.15 * score_ma + 0.15 * score_bb + 0.15 * score_rsi + 0.15 * score_macd + 0.4 * score_arima)
             print('Ticker: ' + ticker + ' score: ' + str(rating))
 
-        # todo Step 4: add score to list
+        # Step 4: add score to list
             self.ratings[ticker] = rating
 
-        # todo Step 5: Get top three rated stocks of the day, put them into the buy list if the score is above 80 (strong buy)
+        # Step 5: Get top three rated stocks of the day, put them into the buy list if the score is above 80 (strong
+        # buy)
         sorted_ratings = sorted(self.ratings.items(), key=lambda item: item[1], reverse=True)[:3]
 
         for ticker in sorted_ratings:
@@ -78,14 +101,14 @@ class TAnalysis(Strategy):
 
         # -----------------------------------------------------
         # look for exits
-        # todo Step 1: If the score of any of the tickers in portfolio falls below a certain level, sell accordingly
+        # Step 1: If the score of the tickers in portfolio falls below a certain level, sell accordingly
         print(self.get_positions())
         for ticker in self.portfolio:
             if ticker != 'USD':
-                if 25 <= self.ratings[ticker] <= 45:
+                if 25 <= self.ratings[ticker] < 45:
                     print('Selling partially ticker: ' + ticker)
                     self.sells.append(ticker)
-                if self.ratings[ticker] <= 20:
+                if self.ratings[ticker] < 25:
                     print('Selling ticker: ' + ticker)
                     self.strong_sells.append(ticker)
 
@@ -166,11 +189,11 @@ class TAnalysis(Strategy):
         if price < ma10 and price < ma20 and price < ma30:
             return 0
         if ma5 > ma10:
-            score += 25
+            score += 50
             if ma5 > ma20:
                 score += 25
                 if ma5 > ma30:
-                    score += 50
+                    score += 25
         return score
 
 
@@ -206,6 +229,11 @@ class TAnalysis(Strategy):
             score += 50
         return score
 
+    def score_arima(selfs, price, next_day_prediction, ninety_day_prediction):
+        score = 0
+        score += 50 if price < next_day_prediction else 0
+        score += 50 if ninety_day_prediction > 1.2 * price else 0
+        return score
 
     def before_starting_trading(self):
         self.daily_analysis()
@@ -216,17 +244,18 @@ class TAnalysis(Strategy):
 
     def on_trading_iteration(self):
         cash_available = self.cash
-        per_stock_allocation = cash_available / self.max_portfolio_size if len(self.buys) > 0 else 0
+        per_stock_allocation = cash_available / (self.max_portfolio_size - len(self.portfolio)) if len(self.portfolio) < self.max_portfolio_size else 0
 
         for ticker in list(set(self.buys)):
-            quantity = per_stock_allocation // self.get_last_price(ticker)
-            if quantity > 0:
-                order = self.create_order(ticker, quantity, 'buy')
-                self.submit_order(order)
-                print('buying ' + str(per_stock_allocation // self.get_last_price(ticker)) + ' shares of ' + ticker + ' for ' + str(self.get_last_price(ticker)))
-                print("cash available: " + str(cash_available))
-                self.portfolio.append(ticker)
-            self.buys.remove(ticker)
+            if len(self.portfolio) < self.max_portfolio_size and cash_available > per_stock_allocation:
+                quantity = per_stock_allocation // self.get_last_price(ticker)
+                if quantity > 0:
+                    order = self.create_order(ticker, quantity, 'buy')
+                    self.submit_order(order)
+                    print('buying ' + str(per_stock_allocation // self.get_last_price(ticker)) + ' shares of ' + ticker + ' for ' + str(self.get_last_price(ticker)))
+                    print("cash available: " + str(cash_available))
+                    self.portfolio.append(ticker)
+                self.buys.remove(ticker)
 
         for ticker in list(set(self.sells)):
             print('selling ticker: ' + ticker)
@@ -257,8 +286,8 @@ class TAnalysis(Strategy):
         self.log_returns()
 
 
-backtesting_start = datetime(2023, 3, 1)
-backtesting_end = datetime.today()
+backtesting_start = datetime(2014, 3, 1)
+backtesting_end = datetime(2024,3,1)
 TAnalysis.backtest(
     YahooDataBacktesting,
     backtesting_start,
