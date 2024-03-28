@@ -30,39 +30,19 @@ class BelfortTicker(yf.Ticker):
         :return: dataframe of ratios
         """
         df = pd.DataFrame()
-        info = []
-        try:
-            eps = self.info["trailingEps"]
-        except KeyError:
-            eps = None
-        info.append(eps)
-
-        try:
-            cps = self.info["operatingCashflow"] / self.info["sharesOutstanding"]
-        except KeyError:
-            cps = None
-        info.append(cps)
-
-        try:
-            dps = self.info["dividendRate"]
-        except KeyError:
-            dps = None
-        info.append(dps)
-
-        try:
-            eg = self.info["earningsGrowth"]
-        except KeyError:
-            eg = None
-        info.append(eg)
-
-        try:
-            pr = self.info["beta"]
-        except KeyError:
-            pr = None
-        info.append(pr)
-
-        df[self.name] = info
-        df.rename(index={0: "EPS", 1: "CPS", 2: "DPS", 3: "EG", 4: "PR"}, inplace=True)
+        info = {
+            "trailingEps": "EPS",
+            "operatingCashflow": "CPS",
+            "dividendRate": "DPS",
+            "earningsGrowth": "EG",
+            "beta": "PR"
+        }
+        for key, col_name in info.items():
+            try:
+                value = self.info[key]
+            except KeyError:
+                value = None
+            df[col_name] = [value]
         return df
 
     def plot_history(self):

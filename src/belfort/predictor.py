@@ -24,30 +24,34 @@ def predict(tickers: [BelfortTicker]):
     return df
 
 
-def long_predict(ticker: BelfortTicker, days: int = 365, verbose: bool = False):
+def long_predict(tickers: [BelfortTicker], days: int = 365, verbose: bool = False):
     """
-    Doesn't support multiple tickers.
     Predict the stock price of the ticker using Prophet model for the next days.
-    :param ticker: ticker to predict of type BelfortTicker.
+    :param tickers: tickers to predict of type BelfortTicker.
     :param days: days since today to predict.
     :param verbose: if True, plot the prediction graph and the components.
     :return: a dataframe with predictions.
     """
-    df = _prepare_dataset(ticker)
-    model = Prophet()
-    model.fit(df)
-    future = model.make_future_dataframe(periods=days)
-    forecast = model.predict(future)
-    if verbose:
-        model.plot(forecast)
-        plt.title("Prediction of the " + ticker.name +
-                  " Stock Price" + " (" + str(days) + " days)")
-        plt.xlabel("Date")
-        plt.ylabel("Close Stock Price")
-        plt.show()
-        model.plot_components(forecast)
-        plt.show()
-    return forecast
+    forecasts = dict()
+
+    for ticker in tickers:
+        df = _prepare_dataset(ticker)
+        model = Prophet()
+        model.fit(df)
+        future = model.make_future_dataframe(periods=days)
+        forecast = model.predict(future)
+        forecasts[ticker.name] = forecast
+        if verbose:
+            model.plot(forecast)
+            plt.title("Prediction of the " + ticker.name +
+                      " Stock Price" + " (" + str(days) + " days)")
+            plt.xlabel("Date")
+            plt.ylabel("Close Stock Price")
+            plt.show()
+            model.plot_components(forecast)
+            plt.show()
+
+    return forecasts
 
 
 def _prepare_dataset(ticker: BelfortTicker):
